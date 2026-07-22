@@ -8,7 +8,10 @@ app.use(cors()); // Enables request permissions from Expo Snack
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+
 app.post('/api/scan-form', async (req, res) => {
+    console.log("RECEIVED INPUT:", req.body); // 👈 ADD THIS LINE
+
     const { userText } = req.body;
 
     try {
