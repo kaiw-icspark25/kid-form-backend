@@ -10,7 +10,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 
 app.post('/api/scan-form', async (req, res) => {
-    console.log("RECEIVED INPUT:", req.body); // 👈 ADD THIS LINE
+    console.info(`[${new Date().toISOString()}] New Request Text: "${req.body.userText}"`);
 
     const { userText } = req.body;
 
