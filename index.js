@@ -8,7 +8,6 @@ app.use(cors()); // Enables request permissions from Expo Snack
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-
 app.post('/api/scan-form', async (req, res) => {
     console.info(`[${new Date().toISOString()}] New Request Text: "${req.body.userText}"`);
 
@@ -32,9 +31,22 @@ app.post('/api/scan-form', async (req, res) => {
         return res.status(200).json({ safe: true, message: "Submission accepted!" });
 
     } catch (error) {
-        // Log the exact error to Render console
+        // Log the exact error details to Render console
         console.error("Moderation scan failed:", error.message || error);
-        return res.status(500).json({ error: "Server error during safety scan." });
+
+        // Check if OpenAI threw a 429 Too Many Requests / Rate Limit error
+        if (error.status === 429) {
+            return res.status(429).json({ 
+                safe: false, 
+                error: "Moderation system busy. Please try again in a few seconds." 
+            });
+        }
+
+        // Generic fallback for all other server or network errors
+        return res.status(500).json({ 
+            safe: false, 
+            error: "Server error during safety scan." 
+        });
     }
 });
 
