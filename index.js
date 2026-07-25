@@ -14,8 +14,11 @@ app.post('/api/scan-form', async (req, res) => {
 
     const { userText } = req.body;
 
+    if (!userText) {
+        return res.status(400).json({ safe: false, message: "No text provided." });
+    }
+
     try {
-        // Call OpenAI's free Moderation endpoint
         const moderationResponse = await openai.moderations.create({ input: userText });
         const results = moderationResponse.results[0];
 
@@ -29,6 +32,8 @@ app.post('/api/scan-form', async (req, res) => {
         return res.status(200).json({ safe: true, message: "Submission accepted!" });
 
     } catch (error) {
+        // Log the exact error to Render console
+        console.error("Moderation scan failed:", error.message || error);
         return res.status(500).json({ error: "Server error during safety scan." });
     }
 });
