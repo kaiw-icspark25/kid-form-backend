@@ -1,48 +1,47 @@
 const express = require('express');
-const OpenAI = require('openai');
 const cors = require('cors');
+const Filter = require('bad-words');
 
 const app = express();
+const filter = new Filter();
+
+// Middleware
 app.use(express.json());
-app.use(cors()); // Enables request permissions from Expo Snack
+app.use(cors()); // Enables request permissions from Expo Snack / Frontend
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-app.post('/api/scan-form', async (req, res) => {
+app.post('/api/scan-form', (req, res) => {
     console.info(`[${new Date().toISOString()}] New Request Text: "${req.body.userText}"`);
 
     const { userText } = req.body;
 
+    // 1. Validate incoming data
     if (!userText) {
-        return res.status(400).json({ safe: false, message: "No text provided." });
+        return res.status(400).json({ 
+            safe: false, 
+            message: "No text provided." 
+        });
     }
 
     try {
-        const moderationResponse = await openai.moderations.create({ input: userText });
-        const results = moderationResponse.results[0];
+        // 2. Check if the text contains inappropriate language locally
+        const isProfane = filter.isProfane(userText);
 
-        if (results.flagged) {
+        if (isProfane) {
+            console.log("Content flagged as unsafe.");
             return res.status(400).json({
                 safe: false,
                 message: "Oops! Please keep your text safe and friendly for everyone."
             });
         }
 
-        return res.status(200).json({ safe: true, message: "Submission accepted!" });
+        console.log("Content approved.");
+        return res.status(200).json({ 
+            safe: true, 
+            message: "Submission accepted!" 
+        });
 
     } catch (error) {
-        // Log the exact error details to Render console
-        console.error("Moderation scan failed:", error.message || error);
-
-        // Check if OpenAI threw a 429 Too Many Requests / Rate Limit error
-        if (error.status === 429) {
-            return res.status(429).json({ 
-                safe: false, 
-                error: "Moderation system busy. Please try again in a few seconds." 
-            });
-        }
-
-        // Generic fallback for all other server or network errors
+        console.error("Local scan error:", error.message || error);
         return res.status(500).json({ 
             safe: false, 
             error: "Server error during safety scan." 
